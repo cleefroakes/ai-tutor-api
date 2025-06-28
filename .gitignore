@@ -4,11 +4,9 @@ package-lock.json
 *.log
 .env
 
-routes/
 !routes/tutor.js
-models/
 !models/student.js
 !models/course.js
 !models/lecture.js
-knowledge/
 !knowledge/knowledge.json
+!public/index.html
