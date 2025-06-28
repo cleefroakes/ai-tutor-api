@@ -1,9 +1,77 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>AI Tutor API</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Tutor</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    canvas { max-width: 500px; }
+  </style>
 </head>
 <body>
-  <h1>Welcome to AI Tutor API</h1>
+  <h1>AI Tutor</h1>
+  <select id="studentId">
+    <option value="1">John Doe</option>
+    <option value="2">Jane Smith</option>
+  </select>
+  <select id="courseId">
+    <option value="1">Physics 101</option>
+    <option value="2">Calculus I</option>
+  </select>
+  <input id="topic" type="text" placeholder="Enter topic (e.g., Physics)" style="width: 200px;">
+  <input id="question" type="text" placeholder="Enter question" style="width: 300px;">
+  <button onclick="getTutorResponse()">Get Response</button>
+  <div id="response"></div>
+  <canvas id="chart" style="display: none;"></canvas>
+  <audio id="audio" controls style="display: none;"></audio>
+
+  <script>
+    async function getTutorResponse() {
+      const studentId = document.getElementById('studentId').value;
+      const courseId = document.getElementById('courseId').value;
+      const topic = document.getElementById('topic').value;
+      const question = document.getElementById('question').value;
+      const responseDiv = document.getElementById('response');
+      const chartCanvas = document.getElementById('chart');
+      const audioPlayer = document.getElementById('audio');
+
+      try {
+        const res = await fetch('/api/tutor', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ studentId: parseInt(studentId), courseId: parseInt(courseId), topic, question }),
+        });
+        const data = await res.json();
+
+        if (data.error) {
+          responseDiv.innerHTML = `<p>Error: ${data.error}</p>`;
+          return;
+        }
+
+        // Display text response
+        responseDiv.innerHTML = `<h3>Explanation (Lecture ${data.lectureId}):</h3><p>${data.explanation}</p>`;
+
+        // Display chart if available
+        if (data.chartData) {
+          chartCanvas.style.display = 'block';
+          new Chart(chartCanvas, {
+            type: 'bar',
+            data: data.chartData,
+            options: { scales: { y: { beginAtZero: true } } },
+          });
+        }
+
+        // Play audio
+        if (data.audioUrl) {
+          audioPlayer.style.display = 'block';
+          audioPlayer.src = data.audioUrl;
+        }
+      } catch (error) {
+        responseDiv.innerHTML = '<p>Error fetching response.</p>';
+      }
+    }
+  </script>
 </body>
 </html>

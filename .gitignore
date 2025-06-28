@@ -4,6 +4,11 @@ package-lock.json
 *.log
 .env
 
+.vvscode/
+Vscode/
+data/
+models/.gitignore
+
 !routes/tutor.js
 !models/student.js
 !models/course.js
