@@ -1,0 +1,38 @@
+{
+  "topics": [
+    {
+      "keyword": "derivative",
+      "response": "A derivative represents the rate of change of a function with respect to a variable. For a function f(x), the derivative f'(x) at a point x=a is the slope of the tangent line to the graph of f at that point.",
+      "chart": {
+        "type": "line",
+        "data": {
+          "labels": ["-2", "-1", "0", "1", "2"],
+          "datasets": [{
+            "label": "f(x) = x^2",
+            "data": [4, 1, 0, 1, 4],
+            "borderColor": "blue",
+            "fill": false
+          }, {
+            "label": "f'(x) = 2x",
+            "data": [-4, -2, 0, 2, 4],
+            "borderColor": "red",
+            "fill": false
+          }]
+        },
+        "options": {
+          "scales": {
+            "y": { "beginAtZero": true }
+          }
+        }
+      }
+    },
+    {
+      "keyword": "integral",
+      "response": "An integral is a mathematical operation that represents the area under a curve or the accumulation of a quantity. The definite integral of f(x) from a to b gives the net area between the curve and the x-axis."
+    },
+    {
+      "keyword": "limit",
+      "response": "A limit describes the value a function approaches as the input approaches a certain point. For example, the limit of f(x) as x approaches a is L if f(x) gets arbitrarily close to L as x gets close to a."
+    }
+  ]
+}
