@@ -3,16 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Tutor</title>
+  <title>AI Tutor & Areola</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body { font-family: Arial, sans-serif; text-align: center; }
     canvas { max-width: 600px; margin: 20px auto; }
     #response { margin: 20px; }
+    select { margin: 10px; padding: 5px; }
   </style>
 </head>
 <body>
-  <h1>AI Tutor</h1>
+  <h1>AI Tutor & Areola</h1>
+  <select id="mode">
+    <option value="tutor">AI Tutor (Knowledge Base)</option>
+    <option value="areola">Areola (Wikipedia)</option>
+  </select>
   <input type="text" id="query" placeholder="Ask a question (e.g., What is a derivative?)">
   <button onclick="askTutor()">Submit</button>
   <div id="response"></div>
@@ -21,12 +26,13 @@
   <script>
     async function askTutor() {
       const query = document.getElementById('query').value;
+      const mode = document.getElementById('mode').value;
       const responseDiv = document.getElementById('response');
       try {
         const response = await fetch('/api/tutor/ask', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query })
+          body: JSON.stringify({ query, mode })
         });
         const data = await response.json();
         responseDiv.innerText = data.answer || 'No response available.';

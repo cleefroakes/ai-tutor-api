@@ -2,37 +2,45 @@
   "topics": [
     {
       "keyword": "derivative",
-      "response": "A derivative represents the rate of change of a function with respect to a variable. For a function f(x), the derivative f'(x) at a point x=a is the slope of the tangent line to the graph of f at that point.",
+      "response": "A derivative in calculus represents the rate of change of a function with respect to a variable. For a function f(x), the derivative f'(x) at a point x=a is defined as the limit of [f(a+h) - f(a)]/h as h approaches 0. It’s used to find slopes of tangents, optimize functions, and analyze motion.",
       "chart": {
         "type": "line",
         "data": {
           "labels": ["-2", "-1", "0", "1", "2"],
-          "datasets": [{
-            "label": "f(x) = x^2",
-            "data": [4, 1, 0, 1, 4],
-            "borderColor": "blue",
-            "fill": false
-          }, {
-            "label": "f'(x) = 2x",
-            "data": [-4, -2, 0, 2, 4],
-            "borderColor": "red",
-            "fill": false
-          }]
+          "datasets": [
+            {
+              "label": "f(x) = x^2",
+              "data": [4, 1, 0, 1, 4],
+              "borderColor": "blue",
+              "fill": false
+            },
+            {
+              "label": "f'(x) = 2x",
+              "data": [-4, -2, 0, 2, 4],
+              "borderColor": "red",
+              "fill": false
+            }
+          ]
         },
         "options": {
-          "scales": {
-            "y": { "beginAtZero": true }
-          }
+          "title": { "display": true, "text": "Function and Derivative" }
         }
       }
     },
     {
-      "keyword": "integral",
-      "response": "An integral is a mathematical operation that represents the area under a curve or the accumulation of a quantity. The definite integral of f(x) from a to b gives the net area between the curve and the x-axis."
+      "keyword": "shakespeare",
+      "response": "William Shakespeare (1564–1616) was an English playwright and poet, widely regarded as the greatest writer in the English language. His works include 38 plays (e.g., Hamlet, Romeo and Juliet) and 154 sonnets. His themes explore love, power, and human nature, influencing modern literature.",
+      "chart": null
     },
     {
-      "keyword": "limit",
-      "response": "A limit describes the value a function approaches as the input approaches a certain point. For example, the limit of f(x) as x approaches a is L if f(x) gets arbitrarily close to L as x gets close to a."
+      "keyword": "photosynthesis",
+      "response": "Photosynthesis is the process by which green plants convert light energy into chemical energy stored in glucose. The equation is 6CO₂ + 6H₂O + light → C₆H₁₂O₆ + 6O₂. It occurs in chloroplasts, using chlorophyll to capture light.",
+      "chart": null
+    },
+    {
+      "keyword": "french revolution",
+      "response": "The French Revolution (1789–1799) was a period of radical social and political upheaval in France. Key events include the fall of the Bastille, the Reign of Terror, and the rise of Napoleon. It was driven by inequality, Enlightenment ideas, and economic crises.",
+      "chart": null
     }
   ]
 }
