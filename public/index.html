@@ -17,13 +17,11 @@
   <button onclick="askTutor()">Submit</button>
   <div id="response"></div>
   <canvas id="visual"></canvas>
-  <audio id="audio" controls></audio>
 
   <script>
     async function askTutor() {
       const query = document.getElementById('query').value;
       const responseDiv = document.getElementById('response');
-      const audio = document.getElementById('audio');
       try {
         const response = await fetch('/api/tutor/ask', {
           method: 'POST',
@@ -36,9 +34,9 @@
           const ctx = document.getElementById('visual').getContext('2d');
           new Chart(ctx, data.chart);
         }
-        if (data.audio) {
-          audio.src = data.audio;
-          audio.play();
+        if (data.answer) {
+          const utterance = new SpeechSynthesisUtterance(data.answer);
+          window.speechSynthesis.speak(utterance);
         }
       } catch (error) {
         responseDiv.innerText = 'Error: ' + error.message;
