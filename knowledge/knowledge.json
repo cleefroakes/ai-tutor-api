@@ -41,6 +41,31 @@
       "keyword": "french revolution",
       "response": "The French Revolution (1789–1799) was a period of radical social and political upheaval in France. Key events include the fall of the Bastille, the Reign of Terror, and the rise of Napoleon. It was driven by inequality, Enlightenment ideas, and economic crises.",
       "chart": null
+    },
+    {
+      "keyword": "president of the united states",
+      "response": "As of June 17, 2025, the President of the United States is Donald Trump, serving his second term since January 20, 2025.",
+      "chart": null
+    },
+    {
+      "keyword": "vice president of the united states",
+      "response": "The Vice President of the United States is JD Vance, sworn in on January 20, 2025.",
+      "chart": null
+    },
+    {
+      "keyword": "first lady of the united states",
+      "response": "The First Lady of the United States is Melania Trump, as of January 20, 2025.",
+      "chart": null
+    },
+    {
+      "keyword": "leader of congress",
+      "response": "The Speaker of the House is Mike Johnson, and the Senate Majority Leader is John Thune, leading Congress as of 2025.",
+      "chart": null
+    },
+    {
+      "keyword": "capital of france",
+      "response": "The capital of France is Paris, known for its culture, art, and landmarks like the Eiffel Tower.",
+      "chart": null
     }
   ]
 }

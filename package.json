@@ -1,7 +1,7 @@
 {
   "name": "ai-tutor-api",
   "version": "1.0.0",
-  "description": "AI Tutor API for university-level courses",
+  "description": "AI Tutor API with Areola integration for university-level courses",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
