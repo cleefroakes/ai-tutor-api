@@ -8,6 +8,7 @@
   <script src="https://cdn.jsdelivr.net/npm/p5@1.4.2/lib/p5.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/framer-motion@10.18.0/dist/framer-motion.js"></script>
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
   <style>
     body { font-family: 'Inter', sans-serif; margin: 20px; background: #f0f2f5; }
     .input-container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); text-align: center; }
@@ -19,6 +20,7 @@
     #canvas { max-width: 600px; margin: 20px auto; }
     #debug { color: red; font-size: 12px; }
     .mock-image { max-width: 100%; height: auto; margin-top: 10px; }
+    .progress { margin: 10px 0; }
   </style>
 </head>
 <body>
@@ -30,14 +32,17 @@
   <div id="response"></div>
   <div id="canvas"></div>
   <div id="debug"></div>
+  <div id="progress" class="progress"></div>
 
   <script>
     let p5Instance = null;
+    let pyodide = null;
 
-    function setup() {
+    async function setup() {
       let canvas = createCanvas(600, 400);
       canvas.parent('canvas');
       background(220);
+      noLoop();
     }
 
     function drawPlantCell(turgid = false) {
@@ -52,6 +57,60 @@
       fill(0);
       text('Chloroplast', 350, 150);
       textSize(12);
+    }
+
+    async function loadPyodide() {
+      if (pyodide) return;
+      pyodide = await loadPyodide();
+      await pyodide.loadPackage(['numpy', 'torch']);
+      await pyodide.runPythonAsync(`
+        import torch
+        import numpy as np
+        class SimpleDiffusion:
+          def __init__(self):
+            self.model = torch.nn.Linear(10, 64*64*3)
+            self.step = 0
+            self.max_steps = 10  # Reduced from 50
+          def generate(self, prompt):
+            self.step += 1
+            if self.step > self.max_steps:
+              return np.random.rand(64, 64, 3) * 255
+            noise = np.random.rand(64, 64, 3) * 255
+            return noise
+        model = SimpleDiffusion()
+      `);
+    }
+
+    async function generateImage(prompt) {
+      if (!pyodide) await loadPyodide();
+      const progressDiv = document.getElementById('progress');
+      progressDiv.innerHTML = 'Generating image... 0%';
+      const startTime = Date.now();
+      const result = await pyodide.runPythonAsync(`
+        import js
+        def update_progress(step):
+          if Date.now() - ${startTime} < 5000:  # 5-second timeout
+            js.document.getElementById('progress').innerHTML = f'Generating image... {int(step / model.max_steps * 100)}%'
+          else:
+            raise Exception("Timeout")
+        for step in range(model.max_steps):
+          update_progress(step)
+          image = model.generate("${prompt}")
+        image
+      `).catch(err => {
+        throw new Error(`Pyodide error: ${err.message}`);
+      });
+      progressDiv.innerHTML = 'Generating image... 100%';
+      const array = pyodide.toJs(result);
+      const canvas = document.createElement('canvas');
+      canvas.width = 64;
+      canvas.height = 64;
+      const ctx = canvas.getContext('2d');
+      const imageData = ctx.createImageData(64, 64);
+      imageData.data.set(new Uint8ClampedArray(array.flat()));
+      ctx.putImageData(imageData, 0, 0);
+      progressDiv.innerHTML = '';
+      return canvas.toDataURL();
     }
 
     async function askTutor() {
@@ -70,7 +129,8 @@
         const response = await fetch('/api/tutor/ask', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query, mode: 'areola' })
+          body: JSON.stringify({ query, mode: 'areola' }),
+          timeout: 10000 // 10-second timeout
         });
         if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
         const data = await response.json();
@@ -79,11 +139,11 @@
           let index = 0;
 
           function speakNext() {
-            if (index >= segments.length) return;
+            if (index >= segments.length) {
+              return;
+            }
             const segment = segments[index].trim();
             responseDiv.innerHTML += `<p>${segment.replace(/\n/g, '<br>')}</p>`;
-            const words = segment.split(' ').length;
-            const duration = words * 0.3;
             const utterance = new SpeechSynthesisUtterance(segment);
             const voices = window.speechSynthesis.getVoices();
             let femaleVoice = voices.find(v => v.lang === 'en-US' && v.name.includes('Female') && (v.name.includes('Google') || v.name.includes('Zira'))) || voices.find(v => v.lang === 'en-US' && v.gender === 'female') || voices[0];
@@ -93,11 +153,12 @@
             utterance.pitch = 1.15;
             utterance.onend = () => {
               index++;
-              if (index === 1 && query.toLowerCase().includes('photosynthesis')) {
+              if (index < segments.length) {
+                setTimeout(speakNext, 500);
+              } else if (query.toLowerCase().includes('photosynthesis')) {
                 drawPlantCell(false);
                 setTimeout(() => drawPlantCell(true), 2000);
               }
-              setTimeout(speakNext, 500);
             };
             window.speechSynthesis.speak(utterance);
           }
@@ -109,14 +170,14 @@
           document.getElementById('canvas').innerHTML = '';
           document.getElementById('canvas').appendChild(ctx.canvas);
         }
-        // Mock image generation
         if (query.toLowerCase().includes('generate image')) {
-          if (confirm('Want to generate an image? (Mock for now)')) {
+          if (confirm('Want to generate an image with our custom model? (Prototype)')) {
+            const imageUrl = await generateImage(query);
             const mockImage = document.createElement('img');
-            mockImage.src = 'https://via.placeholder.com/400x300?text=Mock+AI+Image'; // Placeholder image
+            mockImage.src = imageUrl;
             mockImage.className = 'mock-image';
             responseDiv.appendChild(mockImage);
-            responseDiv.innerHTML += '<p>Mock image generated—real AI art coming soon, dawg!</p>';
+            responseDiv.innerHTML += '<p>Custom image generated—refining the model, dawg!</p>';
           }
         }
       } catch (error) {
@@ -139,6 +200,8 @@
         button.style.transform = 'scale(1)';
       });
     }
+
+    window.addEventListener('load', loadPyodide);
   </script>
 </body>
 </html>

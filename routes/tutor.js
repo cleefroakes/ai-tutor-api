@@ -31,7 +31,7 @@ async function getWikipediaSummary(query, context = null) {
       return { answer: `Yo, I can’t find '${query}'. Try something like '${lastTopic || 'another topic'}'!`, chart: null };
     }
 
-    const extractUrl = `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=extracts&titles=${encodeURIComponent(title)}&exintro&explaintext&exsentences=10`;
+    const extractUrl = `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=extracts&titles=${encodeURIComponent(title)}&exintro&explaintext&exsentences=20`; // Increased to 20
     const extractResponse = await fetch(extractUrl);
     if (!extractResponse.ok) throw new Error(`Extract HTTP error! status: ${extractResponse.status}`);
     const extractData = await extractResponse.json();
@@ -39,7 +39,10 @@ async function getWikipediaSummary(query, context = null) {
     const page = Object.values(extractData.query.pages)[0];
     if (page && page.extract) {
       lastTopic = query;
-      // Simple chart for demo (e.g., photosynthesis stats)
+      // Chunk the extract if too long
+      const chunks = page.extract.match(/(.|\n){1,500}/g) || [page.extract];
+      let answer = `Here’s the scoop on '${page.title}' from Wikipedia:\n`;
+      answer += chunks.join('\n---\n');
       let chart = null;
       if (query.includes('photosynthesis')) {
         chart = {
@@ -55,7 +58,7 @@ async function getWikipediaSummary(query, context = null) {
           options: { responsive: true, scales: { y: { beginAtZero: true } } }
         };
       }
-      return { answer: `Here’s the scoop on '${page.title}' from Wikipedia:\n${page.extract.trim()}`, chart };
+      return { answer, chart };
     }
 
     return { answer: `Yo, I found '${title}' but got no details on '${query}'. Try again or check '${lastTopic || 'something else'}'!`, chart: null };
