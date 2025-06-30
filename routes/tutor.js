@@ -14,25 +14,23 @@ function normalizeQuery(query) {
 function extractKeyTerms(query) {
   query = query.replace(/\b(who|what|where|when|why|how|is|are|the|a|an|of|in|on|at)\b/gi, '');
   query = query.replace(/\s+/g, ' ').trim();
-  return query || query.split(' ')[0]; // Fallback to first word if empty
+  return query || query.split(' ')[0];
 }
 
 async function getWikipediaSummary(query, context = null) {
   try {
     if (!query && context) query = context;
 
-    // First, search for the best matching article
     const searchUrl = `https://en.wikipedia.org/w/api.php?action=opensearch&format=json&search=${encodeURIComponent(query)}&limit=1`;
     const searchResponse = await fetch(searchUrl);
     if (!searchResponse.ok) throw new Error(`Search HTTP error! status: ${searchResponse.status}`);
     const searchData = await searchResponse.json();
     console.log('Wiki Search response:', JSON.stringify(searchData));
-    const [searchTerm, [title]] = searchData; // [query, [title], [description], [url]]
+    const [searchTerm, [title]] = searchData;
     if (!title) {
       return { answer: `Yo, I can’t find '${query}'. Try something like '${lastTopic || 'another topic'}'!`, chart: null };
     }
 
-    // Get the extract for the found title
     const extractUrl = `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=extracts&titles=${encodeURIComponent(title)}&exintro&explaintext&exsentences=10`;
     const extractResponse = await fetch(extractUrl);
     if (!extractResponse.ok) throw new Error(`Extract HTTP error! status: ${extractResponse.status}`);
@@ -41,7 +39,23 @@ async function getWikipediaSummary(query, context = null) {
     const page = Object.values(extractData.query.pages)[0];
     if (page && page.extract) {
       lastTopic = query;
-      return { answer: `Here’s the scoop on '${page.title}' from Wikipedia:\n${page.extract.trim()}`, chart: null };
+      // Simple chart for demo (e.g., photosynthesis stats)
+      let chart = null;
+      if (query.includes('photosynthesis')) {
+        chart = {
+          type: 'bar',
+          data: {
+            labels: ['Light', 'Water', 'CO2'],
+            datasets: [{
+              label: 'Input Usage',
+              data: [70, 20, 10],
+              backgroundColor: 'rgba(236, 72, 153, 0.6)'
+            }]
+          },
+          options: { responsive: true, scales: { y: { beginAtZero: true } } }
+        };
+      }
+      return { answer: `Here’s the scoop on '${page.title}' from Wikipedia:\n${page.extract.trim()}`, chart };
     }
 
     return { answer: `Yo, I found '${title}' but got no details on '${query}'. Try again or check '${lastTopic || 'something else'}'!`, chart: null };
@@ -62,7 +76,6 @@ router.post('/ask', async (req, res) => {
 
   const normalizedQuery = normalizeQuery(query);
 
-  // Handle explicit Wikipedia command
   if (normalizedQuery.startsWith('!wiki')) {
     const wikiQuery = normalizedQuery.slice(5).trim();
     if (wikiQuery) {
@@ -73,7 +86,6 @@ router.post('/ask', async (req, res) => {
     return res.json({ answer, chart });
   }
 
-  // Handle follow-up questions
   if (/what('s| is)?\s*(he|she|it|they)\s*(doing|up to)\??/i.test(normalizedQuery)) {
     if (lastTopic) {
       const result = await getWikipediaSummary(lastTopic, lastTopic);
@@ -83,7 +95,6 @@ router.post('/ask', async (req, res) => {
     return res.json({ answer, chart });
   }
 
-  // Default to Wikipedia for any question
   const result = await getWikipediaSummary(normalizedQuery);
   res.json(result);
 });

@@ -4,25 +4,27 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Areola AI</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Playfair+Display:ital,wght@0,400;1,700&family=Raleway:wght@400;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/p5@1.4.2/lib/p5.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/framer-motion@10.18.0/dist/framer-motion.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; background: #f0f2f5; }
+    body { font-family: 'Inter', sans-serif; margin: 20px; background: #f0f2f5; }
     .input-container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); text-align: center; }
-    input { width: 70%; padding: 12px; border: 1px solid #ccc; border-radius: 5px; font-size: 16px; }
-    button { padding: 12px 20px; border: none; background: #1da1f2; color: white; border-radius: 5px; cursor: pointer; font-size: 16px; transition: background 0.3s; }
-    button:hover { background: #1a91da; }
+    input { width: 70%; padding: 12px; border: 1px solid #ccc; border-radius: 5px; font-family: 'Raleway', sans-serif; font-size: 16px; }
+    button { padding: 12px 20px; border: none; background: #ec4899; color: white; font-family: 'Playfair Display', serif; font-weight: 700; font-style: italic; border-radius: 12px; cursor: pointer; font-size: 16px; transition: all 0.3s ease; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    button:hover { background: #db2777; transform: translateY(-2px); }
     #response { margin: 20px auto; padding: 15px; border-radius: 5px; max-width: 800px; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-    #response p { margin: 10px 0; line-height: 1.5; }
+    #response p { margin: 10px 0; line-height: 1.5; font-family: 'Inter', sans-serif; }
     #canvas { max-width: 600px; margin: 20px auto; }
     #debug { color: red; font-size: 12px; }
   </style>
 </head>
 <body>
-  <h1 style="text-align: center; color: #1da1f2;">Areola AI</h1>
+  <h1 style="text-align: center; color: #ec4899; font-family: 'Playfair Display', serif; font-weight: 700; font-style: italic;">Areola AI</h1>
   <div class="input-container">
-    <input type="text" id="query" placeholder="Ask Areola (e.g., What is photosynthesis? or !wiki [topic])">
-    <button onclick="askTutor()">Ask Me!</button>
+    <input type="text" id="query" placeholder="Ask Areola (e.g., What is photosynthesis?)">
+    <button id="askButton" onclick="askTutor()">Generate Lesson</button>
   </div>
   <div id="response"></div>
   <div id="canvas"></div>
@@ -40,10 +42,10 @@
     function drawPlantCell(turgid = false) {
       background(220);
       fill(0, 255, 0);
-      ellipse(300, 200, 200, 200); // Cell membrane
+      ellipse(300, 200, 200, 200);
       fill(255, 255, 0);
-      ellipse(300, 200, 180, 180); // Cytoplasm
-      fill(0, 255, 0, turgid ? 150 : 50); // Chloroplast (turgid = brighter)
+      ellipse(300, 200, 180, 180);
+      fill(0, 255, 0, turgid ? 150 : 50);
       ellipse(350, 150, 80, 80);
       textAlign(CENTER, CENTER);
       fill(0);
@@ -58,17 +60,18 @@
       responseDiv.innerHTML = '';
       debugDiv.innerHTML = '';
       if (p5Instance) p5Instance.remove();
-      p5Instance = new p5((p) => {
-        p.setup = setup;
-        p.draw = () => {};
-      });
-
       try {
+        p5Instance = new p5((p) => {
+          p.setup = setup;
+          p.draw = () => {};
+        });
+
         const response = await fetch('/api/tutor/ask', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ query, mode: 'areola' })
         });
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
         const data = await response.json();
         if (data.answer) {
           const segments = data.answer.split('\n\n').filter(s => s.trim());
@@ -79,22 +82,21 @@
             const segment = segments[index].trim();
             responseDiv.innerHTML += `<p>${segment.replace(/\n/g, '<br>')}</p>`;
             const words = segment.split(' ').length;
-            const duration = words * 0.3; // 300ms per word
+            const duration = words * 0.3;
             const utterance = new SpeechSynthesisUtterance(segment);
             const voices = window.speechSynthesis.getVoices();
-            // Target a Megyn Kelly-ish voice: US English female, clear and authoritative
             let femaleVoice = voices.find(v => v.lang === 'en-US' && v.name.includes('Female') && (v.name.includes('Google') || v.name.includes('Zira'))) || voices.find(v => v.lang === 'en-US' && v.gender === 'female') || voices[0];
             debugDiv.innerHTML += `Using voice: ${femaleVoice.name}<br>`;
             utterance.voice = femaleVoice;
-            utterance.rate = 0.95; // Crisp pace
-            utterance.pitch = 1.15; // Confident tone
+            utterance.rate = 0.95;
+            utterance.pitch = 1.15;
             utterance.onend = () => {
               index++;
               if (index === 1 && query.toLowerCase().includes('photosynthesis')) {
-                drawPlantCell(false); // Flaccid state
-                setTimeout(() => drawPlantCell(true), 2000); // Turgid state after 2s
+                drawPlantCell(false);
+                setTimeout(() => drawPlantCell(true), 2000);
               }
-              setTimeout(speakNext, 500); // Pause between segments
+              setTimeout(speakNext, 500);
             };
             window.speechSynthesis.speak(utterance);
           }
@@ -107,15 +109,25 @@
           document.getElementById('canvas').appendChild(ctx.canvas);
         }
       } catch (error) {
-        responseDiv.innerText = 'Error: ' + error.message;
+        debugDiv.innerHTML += `Error: ${error.message}<br>`;
+        responseDiv.innerText = 'Oops, something went wrong. Check the debug info!';
       }
     }
 
-    // Load voices when available
     window.speechSynthesis.onvoiceschanged = () => {
       const voices = window.speechSynthesis.getVoices();
-      console.log('Available voices:', voices.map(v => v.name)); // Debug available voices
+      console.log('Available voices:', voices.map(v => v.name));
     };
+
+    const button = document.getElementById('askButton');
+    if (button) {
+      button.addEventListener('mouseover', () => {
+        button.style.transform = 'scale(1.05)';
+      });
+      button.addEventListener('mouseout', () => {
+        button.style.transform = 'scale(1)';
+      });
+    }
   </script>
 </body>
 </html>
