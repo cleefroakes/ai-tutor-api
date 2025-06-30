@@ -1,30 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const fetch = require('node-fetch');
-// Removed knowledge.json dependency since we're focusing on Wikipedia
-
-// Predefined responses (from Areola)
-const responses = {
-  '^\\bhi\\b$': 'Yo, what\'s good, my man?',
-  '^\\bhow are you\\b$': 'I\'m vibin\' like a true AI, dawg! What\'s up with you?',
-  '^\\bwhat is the weather like\\?\\b$': 'No windows here, but tell me your spot and I’ll guess... or not!',
-  '^\\btell me a joke\\b$': 'Why did the scarecrow win an award? He was outstanding in his field!',
-  '^\\bwho made you\\?\\b$': 'Cleef Rookie and Grok AI built me to drop knowledge and keep it real!',
-  '^\\bwhat is your name\\?\\b$': 'I’m Areola, your smooth-talkin’ AI, ready to chat, my man!',
-  '^\\bwhat can you do\\?\\b$': 'I can chat about almost anything, crack jokes, or pull facts from Wikipedia! Ask me stuff like \'who’s the president?\' or use \'!wiki [topic]\' for deep dives.'
-};
-
-// Question mappings for specific queries (using RegExp objects)
-const questionMappings = [
-  { pattern: /who('s| is)?\s*(the)?\s*president\s*(of\s*(the)?\s*(usa|united states|america))\??/i, target: 'president of the united states' },
-  { pattern: /who('s| is)?\s*(the)?\s*vice president\s*(of\s*(the)?\s*(usa|united states|america))\??/i, target: 'vice president of the united states' },
-  { pattern: /who('s| is)?\s*(the)?\s*first lady\s*(of\s*(the)?\s*(usa|united states|america))\??/i, target: 'first lady of the united states' },
-  { pattern: /who('s| is)?\s*(the)?\s*leader\s*(of\s*(the)?\s*congress)\??/i, target: 'leader of congress' },
-  { pattern: /what('s| is)?\s*(the)?\s*capital\s*(of\s*(.*))\??/i, target: (match) => match[4] },
-  { pattern: /who('s| is)?\s*(.*)\??/i, target: (match) => match[2] },
-  { pattern: /what('s| is)?\s*(.*)\??/i, target: (match) => match[2] },
-  { pattern: /what('s| is)?\s*(the)?\s*deal\s*with\s*(.*)\??/i, target: (match) => match[3] }
-];
 
 let lastTopic = null;
 
@@ -45,7 +21,6 @@ async function getWikipediaSummary(query, context = null) {
   try {
     if (!query && context) query = context;
 
-    // Query Wikipedia
     const wikiUrl = `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=extracts&titles=${encodeURIComponent(query)}&exintro&explaintext`;
     const wikiResponse = await fetch(wikiUrl);
     const wikiData = await wikiResponse.json();
@@ -55,9 +30,10 @@ async function getWikipediaSummary(query, context = null) {
       return { answer: `Here’s the scoop on '${page.title}' from Wikipedia:\n${page.extract.slice(0, 500)}...`, chart: null };
     }
 
-    // Try variations
-    const variations = [query, query.charAt(0).toUpperCase() + query.slice(1), query.toUpperCase()];
+    // Try variations and key terms
+    const variations = [query, query.charAt(0).toUpperCase() + query.slice(1), query.toUpperCase(), extractKeyTerms(query)];
     for (const varQuery of variations) {
+      if (!varQuery) continue;
       const url = `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=extracts&titles=${encodeURIComponent(varQuery)}&exintro&explaintext`;
       const response = await fetch(url);
       const data = await response.json();
@@ -77,18 +53,14 @@ async function getWikipediaSummary(query, context = null) {
 
 router.post('/ask', async (req, res) => {
   const { query, mode } = req.body;
-  let answer = 'Sorry, I don’t have an answer for that. Try asking about something else!';
+  let answer = 'Yo, hit me with a question, my man!';
   let chart = null;
 
-  const normalizedQuery = normalizeQuery(query);
-
-  // Check predefined responses
-  for (const pattern in responses) {
-    if (new RegExp(pattern, 'i').test(normalizedQuery)) {
-      answer = responses[pattern];
-      return res.json({ answer, chart });
-    }
+  if (!query || query.trim() === '') {
+    return res.json({ answer, chart });
   }
+
+  const normalizedQuery = normalizeQuery(query);
 
   // Handle explicit Wikipedia command
   if (normalizedQuery.startsWith('!wiki')) {
@@ -111,24 +83,9 @@ router.post('/ask', async (req, res) => {
     return res.json({ answer, chart });
   }
 
-  // Fallback to question mappings or Wikipedia
-  for (const mapping of questionMappings) {
-    const match = mapping.pattern.exec(normalizedQuery);
-    if (match) {
-      const queryExtract = typeof mapping.target === 'function' ? mapping.target(match) : mapping.target;
-      const result = await getWikipediaSummary(normalizeQuery(queryExtract));
-      return res.json(result);
-    }
-  }
-
-  // Fallback to key terms
-  const keyTerms = extractKeyTerms(normalizedQuery);
-  if (keyTerms) {
-    const result = await getWikipediaSummary(keyTerms);
-    return res.json(result);
-  }
-
-  res.json({ answer, chart });
+  // Default to Wikipedia for any question
+  const result = await getWikipediaSummary(normalizedQuery);
+  res.json(result);
 });
 
 module.exports = router;
