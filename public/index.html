@@ -4,14 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AI Tutor & Areola</title>
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.4.2/lib/p5.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body { font-family: Arial, sans-serif; text-align: center; margin: 20px; }
-    canvas { max-width: 600px; margin: 20px auto; }
+    #canvas { max-width: 600px; margin: 20px auto; }
     #response { margin: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 5px; max-width: 800px; margin-left: auto; margin-right: auto; }
-    #response h2 { color: #2c3e50; }
-    #response pre { background: #f5f5f5; padding: 10px; border-radius: 3px; }
-    #response svg { margin: 10px 0; }
+    #response p { margin: 10px 0; }
     select { margin: 10px; padding: 5px; }
     input, button { margin: 5px; padding: 5px; }
   </style>
@@ -22,16 +21,45 @@
     <option value="tutor">AI Tutor (Knowledge Base)</option>
     <option value="areola">Areola (Wikipedia)</option>
   </select>
-  <input type="text" id="query" placeholder="Ask a question (e.g., What is a derivative?) or '!wiki [topic]'">
+  <input type="text" id="query" placeholder="Ask a question (e.g., What is photosynthesis?) or '!wiki [topic]'">
   <button onclick="askTutor()">Submit</button>
   <div id="response"></div>
-  <canvas id="visual"></canvas>
+  <div id="canvas"></div>
 
   <script>
+    let p5Instance = null;
+
+    function setup() {
+      let canvas = createCanvas(600, 400);
+      canvas.parent('canvas');
+      background(220);
+    }
+
+    function drawPlantCell(turgid = false) {
+      background(220);
+      fill(0, 255, 0);
+      ellipse(300, 200, 200, 200); // Cell membrane
+      fill(255, 255, 0);
+      ellipse(300, 200, 180, 180); // Cytoplasm
+      fill(0, 255, 0, turgid ? 150 : 50); // Chloroplast (turgid = brighter)
+      ellipse(350, 150, 80, 80);
+      textAlign(CENTER, CENTER);
+      fill(0);
+      text('Chloroplast', 350, 150);
+      textSize(12);
+    }
+
     async function askTutor() {
       const query = document.getElementById('query').value;
       const mode = document.getElementById('mode').value;
       const responseDiv = document.getElementById('response');
+      responseDiv.innerHTML = '';
+      if (p5Instance) p5Instance.remove(); // Remove previous p5 instance
+      p5Instance = new p5((p) => {
+        p.setup = setup;
+        p.draw = () => {};
+      });
+
       try {
         const response = await fetch('/api/tutor/ask', {
           method: 'POST',
@@ -39,14 +67,32 @@
           body: JSON.stringify({ query, mode })
         });
         const data = await response.json();
-        responseDiv.innerHTML = data.answer ? data.answer.replace(/\n/g, '<br>') : 'No response available.';
-        if (data.chart) {
-          const ctx = document.getElementById('visual').getContext('2d');
-          new Chart(ctx, data.chart);
-        }
         if (data.answer) {
-          const utterance = new SpeechSynthesisUtterance(data.answer);
-          window.speechSynthesis.speak(utterance);
+          const segments = data.answer.split('\n\n').filter(s => s.trim());
+          let index = 0;
+
+          function speakNext() {
+            if (index >= segments.length) return;
+            const segment = segments[index].trim();
+            responseDiv.innerHTML += `<p>${segment.replace(/\n/g, '<br>')}</p>`;
+            const utterance = new SpeechSynthesisUtterance(segment);
+            utterance.onend = () => {
+              index++;
+              if (index === 1 && query.toLowerCase().includes('photosynthesis')) {
+                drawPlantCell(false); // Flaccid state
+                setTimeout(() => drawPlantCell(true), 2000); // Turgid state after 2s
+              }
+              speakNext();
+            };
+            window.speechSynthesis.speak(utterance);
+          }
+          speakNext();
+        }
+        if (data.chart) {
+          const ctx = document.createElement('canvas').getContext('2d');
+          new Chart(ctx, data.chart);
+          document.getElementById('canvas').innerHTML = '';
+          document.getElementById('canvas').appendChild(ctx.canvas);
         }
       } catch (error) {
         responseDiv.innerText = 'Error: ' + error.message;

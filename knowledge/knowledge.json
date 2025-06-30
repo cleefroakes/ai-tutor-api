@@ -2,7 +2,7 @@
   "topics": [
     {
       "keyword": "derivative",
-      "response": "A derivative in calculus represents the rate of change of a function with respect to a variable. For a function f(x), the derivative f'(x) at a point x=a is defined as the limit of [f(a+h) - f(a)]/h as h approaches 0. It’s used to find slopes of tangents, optimize functions, and analyze motion.",
+      "response": "A derivative in calculus represents the rate of change of a function.\n\nFor a function f(x), the derivative f'(x) at x=a is the limit of [f(a+h) - f(a)]/h as h approaches 0.\n\nIt’s used to find slopes of tangents and optimize functions.",
       "chart": {
         "type": "line",
         "data": {
@@ -29,42 +29,42 @@
     },
     {
       "keyword": "shakespeare",
-      "response": "William Shakespeare (1564–1616) was an English playwright and poet, widely regarded as the greatest writer in the English language. His works include 38 plays (e.g., Hamlet, Romeo and Juliet) and 154 sonnets. His themes explore love, power, and human nature, influencing modern literature.",
+      "response": "William Shakespeare (1564–1616) was an English playwright.\n\nHis works include 38 plays like Hamlet and 154 sonnets.\n\nHis themes explore love and power, influencing literature.",
       "chart": null
     },
     {
       "keyword": "photosynthesis",
-      "response": "## Introduction to Photosynthesis\nPhotosynthesis is the process by which green plants, algae, and some bacteria convert light energy into chemical energy stored in glucose.\n\n## The Process\nThe equation is 6CO₂ + 6H₂O + light → C₆H₁₂O₆ + 6O₂. It occurs in chloroplasts, using chlorophyll to capture light, transforming it into energy through the light-dependent and light-independent (Calvin cycle) reactions.\n\n## Visual Representation\n### Plant Cell (ASCII Art)\n```\n   +-----------------+\n   |     Chloroplast|\n   |    +-------+   |\n   |    | Thylakoids |  - Site of light reactions\n   |    +-------+   |\n   |    | Stroma |  - Site of Calvin cycle\n   |    +-------+   |\n   +----------------+\n```\n### Flaccid vs. Turgid States (SVG)\n<svg width=\"200\" height=\"100\">\n  <rect x=\"10\" y=\"10\" width=\"80\" height=\"80\" fill=\"lightgreen\" stroke=\"black\" />\n  <text x=\"20\" y=\"30\" fill=\"black\">Flaccid (low turgor)</text>\n  <rect x=\"110\" y=\"10\" width=\"80\" height=\"80\" fill=\"green\" stroke=\"black\" />\n  <text x=\"120\" y=\"30\" fill=\"black\">Turgid (high turgor)</text>\n</svg>\n\n## Examples\n- Leaves turn sunlight into energy for growth.\n- Oxygen production supports life on Earth.",
+      "response": "Photosynthesis is how plants convert light into energy.\n\nThe equation is 6CO₂ + 6H₂O + light → C₆H₁₂O₆ + 6O₂, occurring in chloroplasts with chlorophyll.\n\nLeaves use this for growth, producing oxygen.",
       "chart": null
     },
     {
       "keyword": "french revolution",
-      "response": "The French Revolution (1789–1799) was a period of radical social and political upheaval in France. Key events include the fall of the Bastille, the Reign of Terror, and the rise of Napoleon. It was driven by inequality, Enlightenment ideas, and economic crises.",
+      "response": "The French Revolution (1789–1799) was a major upheaval.\n\nKey events include the fall of the Bastille and the Reign of Terror.\n\nIt was driven by inequality and Enlightenment ideas.",
       "chart": null
     },
     {
       "keyword": "president of the united states",
-      "response": "As of June 17, 2025, the President of the United States is Donald Trump, serving his second term since January 20, 2025.",
+      "response": "As of June 17, 2025, the President is Donald Trump.",
       "chart": null
     },
     {
       "keyword": "vice president of the united states",
-      "response": "The Vice President of the United States is JD Vance, sworn in on January 20, 2025.",
+      "response": "The Vice President is JD Vance, sworn in on January 20, 2025.",
       "chart": null
     },
     {
       "keyword": "first lady of the united states",
-      "response": "The First Lady of the United States is Melania Trump, as of January 20, 2025.",
+      "response": "The First Lady is Melania Trump, as of January 20, 2025.",
       "chart": null
     },
     {
       "keyword": "leader of congress",
-      "response": "The Speaker of the House is Mike Johnson, and the Senate Majority Leader is John Thune, leading Congress as of 2025.",
+      "response": "The Speaker is Mike Johnson, and the Senate Majority Leader is John Thune.",
       "chart": null
     },
     {
       "keyword": "capital of france",
-      "response": "The capital of France is Paris, known for its culture, art, and landmarks like the Eiffel Tower.",
+      "response": "The capital of France is Paris, known for its culture.",
       "chart": null
     }
   ]

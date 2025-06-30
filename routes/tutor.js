@@ -72,7 +72,7 @@ async function getWikipediaSummary(query, context = null) {
       const pageVar = Object.values(data.query.pages)[0];
       if (pageVar.extract) {
         lastTopic = query;
-        return { answer: `Here’s the scoop on '${pageVar.title}' from Wikipedia:\n${pageVar.extract.slice(0, 500)}...`, chart: null };
+        return { answer: `Here’s the scoop on '${pageVar.title}' from Wikipedia:\n${page.extract.slice(0, 500)}...`, chart: null };
       }
     }
 
