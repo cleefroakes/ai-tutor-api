@@ -15,6 +15,7 @@
     #response { margin: 20px auto; padding: 15px; border-radius: 5px; max-width: 800px; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
     #response p { margin: 10px 0; line-height: 1.5; }
     #canvas { max-width: 600px; margin: 20px auto; }
+    #debug { color: red; font-size: 12px; }
   </style>
 </head>
 <body>
@@ -25,6 +26,7 @@
   </div>
   <div id="response"></div>
   <div id="canvas"></div>
+  <div id="debug"></div>
 
   <script>
     let p5Instance = null;
@@ -52,7 +54,9 @@
     async function askTutor() {
       const query = document.getElementById('query').value;
       const responseDiv = document.getElementById('response');
+      const debugDiv = document.getElementById('debug');
       responseDiv.innerHTML = '';
+      debugDiv.innerHTML = '';
       if (p5Instance) p5Instance.remove();
       p5Instance = new p5((p) => {
         p.setup = setup;
@@ -77,12 +81,13 @@
             const words = segment.split(' ').length;
             const duration = words * 0.3; // 300ms per word
             const utterance = new SpeechSynthesisUtterance(segment);
-            // Set to a female voice approximating Megyn Kelly's style
             const voices = window.speechSynthesis.getVoices();
-            const femaleVoice = voices.find(v => v.lang === 'en-US' && v.name.includes('Female')) || voices[0];
+            // Target a Megyn Kelly-ish voice: US English female, clear and authoritative
+            let femaleVoice = voices.find(v => v.lang === 'en-US' && v.name.includes('Female') && (v.name.includes('Google') || v.name.includes('Zira'))) || voices.find(v => v.lang === 'en-US' && v.gender === 'female') || voices[0];
+            debugDiv.innerHTML += `Using voice: ${femaleVoice.name}<br>`;
             utterance.voice = femaleVoice;
-            utterance.rate = 0.95; // Slightly slower for clarity
-            utterance.pitch = 1.1; // Slight boost for a confident tone
+            utterance.rate = 0.95; // Crisp pace
+            utterance.pitch = 1.15; // Confident tone
             utterance.onend = () => {
               index++;
               if (index === 1 && query.toLowerCase().includes('photosynthesis')) {

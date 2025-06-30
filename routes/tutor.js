@@ -21,33 +21,36 @@ async function getWikipediaSummary(query, context = null) {
   try {
     if (!query && context) query = context;
 
-    const wikiUrl = `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=extracts&titles=${encodeURIComponent(query)}&exintro&explaintext`;
+    const wikiUrl = `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=extracts&titles=${encodeURIComponent(query)}&exintro&explaintext&exsentences=10`;
     const wikiResponse = await fetch(wikiUrl);
+    if (!wikiResponse.ok) throw new Error(`HTTP error! status: ${wikiResponse.status}`);
     const wikiData = await wikiResponse.json();
+    console.log('Wiki API response:', JSON.stringify(wikiData)); // Debug log
     const page = Object.values(wikiData.query.pages)[0];
-    if (page.extract) {
+    if (page && page.extract) {
       lastTopic = query;
-      return { answer: `Here’s the scoop on '${page.title}' from Wikipedia:\n${page.extract.slice(0, 500)}...`, chart: null };
+      return { answer: `Here’s the scoop on '${page.title}' from Wikipedia:\n${page.extract.trim()}`, chart: null };
     }
 
     // Try variations and key terms
     const variations = [query, query.charAt(0).toUpperCase() + query.slice(1), query.toUpperCase(), extractKeyTerms(query)];
     for (const varQuery of variations) {
       if (!varQuery) continue;
-      const url = `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=extracts&titles=${encodeURIComponent(varQuery)}&exintro&explaintext`;
+      const url = `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=extracts&titles=${encodeURIComponent(varQuery)}&exintro&explaintext&exsentences=10`;
       const response = await fetch(url);
+      if (!response.ok) continue;
       const data = await response.json();
       const pageVar = Object.values(data.query.pages)[0];
-      if (pageVar.extract) {
+      if (pageVar && pageVar.extract) {
         lastTopic = query;
-        return { answer: `Here’s the scoop on '${pageVar.title}' from Wikipedia:\n${pageVar.extract.slice(0, 500)}...`, chart: null };
+        return { answer: `Here’s the scoop on '${pageVar.title}' from Wikipedia:\n${pageVar.extract.trim()}`, chart: null };
       }
     }
 
-    return { answer: `Yo, I’m drawing a blank on '${query}'. Try rephrasing or ask about something like '${lastTopic || 'a topic'}'!`, chart: null };
+    return { answer: `Yo, I’m drawing a blank on '${query}'. Maybe try again or ask about '${lastTopic || 'something else'}'!`, chart: null };
   } catch (error) {
-    console.error('Wikipedia API error:', error);
-    return { answer: 'Error fetching Wikipedia data. Please try again later.', chart: null };
+    console.error('Wikipedia API error:', error.message);
+    return { answer: `Oops, something went wrong with '${query}'. Maybe try again or ask about '${lastTopic || 'something else'}'!`, chart: null };
   }
 }
 
