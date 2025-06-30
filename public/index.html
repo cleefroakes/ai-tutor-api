@@ -18,12 +18,13 @@
     #response p { margin: 10px 0; line-height: 1.5; font-family: 'Inter', sans-serif; }
     #canvas { max-width: 600px; margin: 20px auto; }
     #debug { color: red; font-size: 12px; }
+    .mock-image { max-width: 100%; height: auto; margin-top: 10px; }
   </style>
 </head>
 <body>
   <h1 style="text-align: center; color: #ec4899; font-family: 'Playfair Display', serif; font-weight: 700; font-style: italic;">Areola AI</h1>
   <div class="input-container">
-    <input type="text" id="query" placeholder="Ask Areola (e.g., What is photosynthesis?)">
+    <input type="text" id="query" placeholder="Ask Areola (e.g., What is photosynthesis? or generate image)">
     <button id="askButton" onclick="askTutor()">Generate Lesson</button>
   </div>
   <div id="response"></div>
@@ -107,6 +108,16 @@
           new Chart(ctx, data.chart);
           document.getElementById('canvas').innerHTML = '';
           document.getElementById('canvas').appendChild(ctx.canvas);
+        }
+        // Mock image generation
+        if (query.toLowerCase().includes('generate image')) {
+          if (confirm('Want to generate an image? (Mock for now)')) {
+            const mockImage = document.createElement('img');
+            mockImage.src = 'https://via.placeholder.com/400x300?text=Mock+AI+Image'; // Placeholder image
+            mockImage.className = 'mock-image';
+            responseDiv.appendChild(mockImage);
+            responseDiv.innerHTML += '<p>Mock image generated—real AI art coming soon, dawg!</p>';
+          }
         }
       } catch (error) {
         debugDiv.innerHTML += `Error: ${error.message}<br>`;
