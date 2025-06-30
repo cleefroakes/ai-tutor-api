@@ -34,7 +34,7 @@
     },
     {
       "keyword": "photosynthesis",
-      "response": "Photosynthesis is the process by which green plants convert light energy into chemical energy stored in glucose. The equation is 6CO₂ + 6H₂O + light → C₆H₁₂O₆ + 6O₂. It occurs in chloroplasts, using chlorophyll to capture light.",
+      "response": "## Introduction to Photosynthesis\nPhotosynthesis is the process by which green plants, algae, and some bacteria convert light energy into chemical energy stored in glucose.\n\n## The Process\nThe equation is 6CO₂ + 6H₂O + light → C₆H₁₂O₆ + 6O₂. It occurs in chloroplasts, using chlorophyll to capture light, transforming it into energy through the light-dependent and light-independent (Calvin cycle) reactions.\n\n## Visual Representation\n### Plant Cell (ASCII Art)\n```\n   +-----------------+\n   |     Chloroplast|\n   |    +-------+   |\n   |    | Thylakoids |  - Site of light reactions\n   |    +-------+   |\n   |    | Stroma |  - Site of Calvin cycle\n   |    +-------+   |\n   +----------------+\n```\n### Flaccid vs. Turgid States (SVG)\n<svg width=\"200\" height=\"100\">\n  <rect x=\"10\" y=\"10\" width=\"80\" height=\"80\" fill=\"lightgreen\" stroke=\"black\" />\n  <text x=\"20\" y=\"30\" fill=\"black\">Flaccid (low turgor)</text>\n  <rect x=\"110\" y=\"10\" width=\"80\" height=\"80\" fill=\"green\" stroke=\"black\" />\n  <text x=\"120\" y=\"30\" fill=\"black\">Turgid (high turgor)</text>\n</svg>\n\n## Examples\n- Leaves turn sunlight into energy for growth.\n- Oxygen production supports life on Earth.",
       "chart": null
     },
     {

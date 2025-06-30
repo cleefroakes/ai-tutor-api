@@ -125,7 +125,6 @@ router.post('/ask', async (req, res) => {
       if (normalizedQuery.includes(topic.keyword.toLowerCase())) {
         answer = topic.response;
         chart = topic.chart || null;
-        lastTopic = normalizedQuery;
         return res.json({ answer, chart });
       }
     }

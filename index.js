@@ -17,8 +17,8 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Start server on Render-assigned port or 5000 locally
-const PORT = process.env.PORT || 5000;
+// Start server on Render-assigned port or 3000 locally
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
