@@ -14,40 +14,37 @@ function normalizeQuery(query) {
 function extractKeyTerms(query) {
   query = query.replace(/\b(who|what|where|when|why|how|is|are|the|a|an|of|in|on|at)\b/gi, '');
   query = query.replace(/\s+/g, ' ').trim();
-  return query;
+  return query || query.split(' ')[0]; // Fallback to first word if empty
 }
 
 async function getWikipediaSummary(query, context = null) {
   try {
     if (!query && context) query = context;
 
-    const wikiUrl = `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=extracts&titles=${encodeURIComponent(query)}&exintro&explaintext&exsentences=10`;
-    const wikiResponse = await fetch(wikiUrl);
-    if (!wikiResponse.ok) throw new Error(`HTTP error! status: ${wikiResponse.status}`);
-    const wikiData = await wikiResponse.json();
-    console.log('Wiki API response:', JSON.stringify(wikiData)); // Debug log
-    const page = Object.values(wikiData.query.pages)[0];
+    // First, search for the best matching article
+    const searchUrl = `https://en.wikipedia.org/w/api.php?action=opensearch&format=json&search=${encodeURIComponent(query)}&limit=1`;
+    const searchResponse = await fetch(searchUrl);
+    if (!searchResponse.ok) throw new Error(`Search HTTP error! status: ${searchResponse.status}`);
+    const searchData = await searchResponse.json();
+    console.log('Wiki Search response:', JSON.stringify(searchData));
+    const [searchTerm, [title]] = searchData; // [query, [title], [description], [url]]
+    if (!title) {
+      return { answer: `Yo, I can’t find '${query}'. Try something like '${lastTopic || 'another topic'}'!`, chart: null };
+    }
+
+    // Get the extract for the found title
+    const extractUrl = `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=extracts&titles=${encodeURIComponent(title)}&exintro&explaintext&exsentences=10`;
+    const extractResponse = await fetch(extractUrl);
+    if (!extractResponse.ok) throw new Error(`Extract HTTP error! status: ${extractResponse.status}`);
+    const extractData = await extractResponse.json();
+    console.log('Wiki Extract response:', JSON.stringify(extractData));
+    const page = Object.values(extractData.query.pages)[0];
     if (page && page.extract) {
       lastTopic = query;
       return { answer: `Here’s the scoop on '${page.title}' from Wikipedia:\n${page.extract.trim()}`, chart: null };
     }
 
-    // Try variations and key terms
-    const variations = [query, query.charAt(0).toUpperCase() + query.slice(1), query.toUpperCase(), extractKeyTerms(query)];
-    for (const varQuery of variations) {
-      if (!varQuery) continue;
-      const url = `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=extracts&titles=${encodeURIComponent(varQuery)}&exintro&explaintext&exsentences=10`;
-      const response = await fetch(url);
-      if (!response.ok) continue;
-      const data = await response.json();
-      const pageVar = Object.values(data.query.pages)[0];
-      if (pageVar && pageVar.extract) {
-        lastTopic = query;
-        return { answer: `Here’s the scoop on '${pageVar.title}' from Wikipedia:\n${pageVar.extract.trim()}`, chart: null };
-      }
-    }
-
-    return { answer: `Yo, I’m drawing a blank on '${query}'. Maybe try again or ask about '${lastTopic || 'something else'}'!`, chart: null };
+    return { answer: `Yo, I found '${title}' but got no details on '${query}'. Try again or check '${lastTopic || 'something else'}'!`, chart: null };
   } catch (error) {
     console.error('Wikipedia API error:', error.message);
     return { answer: `Oops, something went wrong with '${query}'. Maybe try again or ask about '${lastTopic || 'something else'}'!`, chart: null };
