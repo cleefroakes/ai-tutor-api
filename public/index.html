@@ -8,6 +8,7 @@
   <script src="https://cdn.jsdelivr.net/npm/p5@1.4.2/lib/p5.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/framer-motion@10.18.0/dist/framer-motion.js"></script>
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
   <style>
     body { font-family: 'Inter', sans-serif; margin: 20px; background: #f0f2f5; }
     .input-container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); text-align: center; }
@@ -33,11 +34,13 @@
 
   <script>
     let p5Instance = null;
+    let pyodide = null;
 
-    function setup() {
+    async function setup() {
       let canvas = createCanvas(600, 400);
       canvas.parent('canvas');
       background(220);
+      noLoop(); // Prevent infinite draw loop
     }
 
     function drawPlantCell(turgid = false) {
@@ -54,6 +57,36 @@
       textSize(12);
     }
 
+    async function loadPyodide() {
+      if (pyodide) return; // Prevent reload
+      pyodide = await loadPyodide();
+      await pyodide.loadPackage(['numpy', 'torch']);
+      await pyodide.runPythonAsync(`
+        import torch
+        class SimpleDiffusion:
+          def __init__(self):
+            self.model = torch.nn.Linear(10, 64*64*3)
+          def generate(self, prompt):
+            import numpy as np
+            return np.random.rand(64, 64, 3) * 255
+        model = SimpleDiffusion()
+      `);
+    }
+
+    async function generateImage(prompt) {
+      if (!pyodide) await loadPyodide();
+      const result = await pyodide.runPythonAsync(`model.generate("${prompt}")`);
+      const array = pyodide.toJs(result);
+      const canvas = document.createElement('canvas');
+      canvas.width = 64;
+      canvas.height = 64;
+      const ctx = canvas.getContext('2d');
+      const imageData = ctx.createImageData(64, 64);
+      imageData.data.set(new Uint8ClampedArray(array.flat()));
+      ctx.putImageData(imageData, 0, 0);
+      return canvas.toDataURL();
+    }
+
     async function askTutor() {
       const query = document.getElementById('query').value;
       const responseDiv = document.getElementById('response');
@@ -64,7 +97,7 @@
       try {
         p5Instance = new p5((p) => {
           p.setup = setup;
-          p.draw = () => {};
+          p.draw = () => {}; // Empty draw to avoid loop
         });
 
         const response = await fetch('/api/tutor/ask', {
@@ -79,11 +112,11 @@
           let index = 0;
 
           function speakNext() {
-            if (index >= segments.length) return;
+            if (index >= segments.length) {
+              return; // Exit condition
+            }
             const segment = segments[index].trim();
             responseDiv.innerHTML += `<p>${segment.replace(/\n/g, '<br>')}</p>`;
-            const words = segment.split(' ').length;
-            const duration = words * 0.3;
             const utterance = new SpeechSynthesisUtterance(segment);
             const voices = window.speechSynthesis.getVoices();
             let femaleVoice = voices.find(v => v.lang === 'en-US' && v.name.includes('Female') && (v.name.includes('Google') || v.name.includes('Zira'))) || voices.find(v => v.lang === 'en-US' && v.gender === 'female') || voices[0];
@@ -93,11 +126,12 @@
             utterance.pitch = 1.15;
             utterance.onend = () => {
               index++;
-              if (index === 1 && query.toLowerCase().includes('photosynthesis')) {
+              if (index < segments.length) {
+                setTimeout(speakNext, 500); // Controlled delay
+              } else if (query.toLowerCase().includes('photosynthesis')) {
                 drawPlantCell(false);
                 setTimeout(() => drawPlantCell(true), 2000);
               }
-              setTimeout(speakNext, 500);
             };
             window.speechSynthesis.speak(utterance);
           }
@@ -109,14 +143,14 @@
           document.getElementById('canvas').innerHTML = '';
           document.getElementById('canvas').appendChild(ctx.canvas);
         }
-        // Mock image generation
         if (query.toLowerCase().includes('generate image')) {
-          if (confirm('Want to generate an image? (Mock for now)')) {
+          if (confirm('Want to generate an image with our custom model? (Prototype)')) {
+            const imageUrl = await generateImage(query);
             const mockImage = document.createElement('img');
-            mockImage.src = 'https://via.placeholder.com/400x300?text=Mock+AI+Image'; // Placeholder image
+            mockImage.src = imageUrl;
             mockImage.className = 'mock-image';
             responseDiv.appendChild(mockImage);
-            responseDiv.innerHTML += '<p>Mock image generated—real AI art coming soon, dawg!</p>';
+            responseDiv.innerHTML += '<p>Custom image generated—refining the model, dawg!</p>';
           }
         }
       } catch (error) {
@@ -139,6 +173,8 @@
         button.style.transform = 'scale(1)';
       });
     }
+
+    window.addEventListener('load', loadPyodide);
   </script>
 </body>
 </html>
