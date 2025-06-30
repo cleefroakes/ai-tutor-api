@@ -3,26 +3,26 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Tutor & Areola</title>
+  <title>Areola AI</title>
   <script src="https://cdn.jsdelivr.net/npm/p5@1.4.2/lib/p5.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; text-align: center; margin: 20px; }
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f0f2f5; }
+    .input-container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); text-align: center; }
+    input { width: 70%; padding: 12px; border: 1px solid #ccc; border-radius: 5px; font-size: 16px; }
+    button { padding: 12px 20px; border: none; background: #1da1f2; color: white; border-radius: 5px; cursor: pointer; font-size: 16px; transition: background 0.3s; }
+    button:hover { background: #1a91da; }
+    #response { margin: 20px auto; padding: 15px; border-radius: 5px; max-width: 800px; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    #response p { margin: 10px 0; line-height: 1.5; }
     #canvas { max-width: 600px; margin: 20px auto; }
-    #response { margin: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 5px; max-width: 800px; margin-left: auto; margin-right: auto; }
-    #response p { margin: 10px 0; }
-    select { margin: 10px; padding: 5px; }
-    input, button { margin: 5px; padding: 5px; }
   </style>
 </head>
 <body>
-  <h1>AI Tutor & Areola</h1>
-  <select id="mode">
-    <option value="tutor">AI Tutor (Knowledge Base)</option>
-    <option value="areola">Areola (Wikipedia)</option>
-  </select>
-  <input type="text" id="query" placeholder="Ask a question (e.g., What is photosynthesis?) or '!wiki [topic]'">
-  <button onclick="askTutor()">Submit</button>
+  <h1 style="text-align: center; color: #1da1f2;">Areola AI</h1>
+  <div class="input-container">
+    <input type="text" id="query" placeholder="Ask Areola (e.g., What is photosynthesis? or !wiki [topic])">
+    <button onclick="askTutor()">Ask Me!</button>
+  </div>
   <div id="response"></div>
   <div id="canvas"></div>
 
@@ -51,10 +51,9 @@
 
     async function askTutor() {
       const query = document.getElementById('query').value;
-      const mode = document.getElementById('mode').value;
       const responseDiv = document.getElementById('response');
       responseDiv.innerHTML = '';
-      if (p5Instance) p5Instance.remove(); // Remove previous p5 instance
+      if (p5Instance) p5Instance.remove();
       p5Instance = new p5((p) => {
         p.setup = setup;
         p.draw = () => {};
@@ -64,7 +63,7 @@
         const response = await fetch('/api/tutor/ask', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query, mode })
+          body: JSON.stringify({ query, mode: 'areola' }) // Default to Areola mode
         });
         const data = await response.json();
         if (data.answer) {
@@ -75,14 +74,17 @@
             if (index >= segments.length) return;
             const segment = segments[index].trim();
             responseDiv.innerHTML += `<p>${segment.replace(/\n/g, '<br>')}</p>`;
+            const words = segment.split(' ').length;
+            const duration = words * 0.3; // 300ms per word
             const utterance = new SpeechSynthesisUtterance(segment);
+            utterance.rate = 0.9; // Human-like pace
             utterance.onend = () => {
               index++;
               if (index === 1 && query.toLowerCase().includes('photosynthesis')) {
                 drawPlantCell(false); // Flaccid state
                 setTimeout(() => drawPlantCell(true), 2000); // Turgid state after 2s
               }
-              speakNext();
+              setTimeout(speakNext, 500); // Pause between segments
             };
             window.speechSynthesis.speak(utterance);
           }

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const fetch = require('node-fetch');
-const knowledgeBase = require('../knowledge/knowledge.json');
+// Removed knowledge.json dependency since we're focusing on Wikipedia
 
 // Predefined responses (from Areola)
 const responses = {
@@ -11,7 +11,7 @@ const responses = {
   '^\\btell me a joke\\b$': 'Why did the scarecrow win an award? He was outstanding in his field!',
   '^\\bwho made you\\?\\b$': 'Cleef Rookie and Grok AI built me to drop knowledge and keep it real!',
   '^\\bwhat is your name\\?\\b$': 'I’m Areola, your smooth-talkin’ AI, ready to chat, my man!',
-  '^\\bwhat can you do\\?\\b$': 'I can chat about almost anything, crack jokes, or pull facts from Wikipedia! Ask me stuff like \'who’s the president?\' or select Areola mode for deep dives.'
+  '^\\bwhat can you do\\?\\b$': 'I can chat about almost anything, crack jokes, or pull facts from Wikipedia! Ask me stuff like \'who’s the president?\' or use \'!wiki [topic]\' for deep dives.'
 };
 
 // Question mappings for specific queries (using RegExp objects)
@@ -45,14 +45,6 @@ async function getWikipediaSummary(query, context = null) {
   try {
     if (!query && context) query = context;
 
-    // Check knowledge.json first
-    for (const topic of knowledgeBase.topics) {
-      if (query.toLowerCase() === topic.keyword.toLowerCase()) {
-        lastTopic = query;
-        return { answer: topic.response, chart: topic.chart || null };
-      }
-    }
-
     // Query Wikipedia
     const wikiUrl = `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=extracts&titles=${encodeURIComponent(query)}&exintro&explaintext`;
     const wikiResponse = await fetch(wikiUrl);
@@ -72,7 +64,7 @@ async function getWikipediaSummary(query, context = null) {
       const pageVar = Object.values(data.query.pages)[0];
       if (pageVar.extract) {
         lastTopic = query;
-        return { answer: `Here’s the scoop on '${pageVar.title}' from Wikipedia:\n${page.extract.slice(0, 500)}...`, chart: null };
+        return { answer: `Here’s the scoop on '${pageVar.title}' from Wikipedia:\n${pageVar.extract.slice(0, 500)}...`, chart: null };
       }
     }
 
@@ -85,7 +77,7 @@ async function getWikipediaSummary(query, context = null) {
 
 router.post('/ask', async (req, res) => {
   const { query, mode } = req.body;
-  let answer = 'Sorry, I don’t have an answer for that. Try asking about academic topics!';
+  let answer = 'Sorry, I don’t have an answer for that. Try asking about something else!';
   let chart = null;
 
   const normalizedQuery = normalizeQuery(query);
@@ -117,17 +109,6 @@ router.post('/ask', async (req, res) => {
     }
     answer = 'Yo, I need some context! Ask about someone or something first.';
     return res.json({ answer, chart });
-  }
-
-  // Handle AI Tutor (knowledge base) or Areola (Wikipedia) mode
-  if (mode === 'tutor') {
-    for (const topic of knowledgeBase.topics) {
-      if (normalizedQuery.includes(topic.keyword.toLowerCase())) {
-        answer = topic.response;
-        chart = topic.chart || null;
-        return res.json({ answer, chart });
-      }
-    }
   }
 
   // Fallback to question mappings or Wikipedia
