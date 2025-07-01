@@ -4,204 +4,87 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Areola AI</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Playfair+Display:ital,wght@0,400;1,700&family=Raleway:wght@400;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/p5@1.4.2/lib/p5.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/framer-motion@10.18.0/dist/framer-motion.js"></script>
-  <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <style>
-    body { font-family: 'Inter', sans-serif; margin: 20px; background: #f0f2f5; }
-    .input-container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); text-align: center; }
-    input { width: 70%; padding: 12px; border: 1px solid #ccc; border-radius: 5px; font-family: 'Raleway', sans-serif; font-size: 16px; }
-    button { padding: 12px 20px; border: none; background: #ec4899; color: white; font-family: 'Playfair Display', serif; font-weight: 700; font-style: italic; border-radius: 12px; cursor: pointer; font-size: 16px; transition: all 0.3s ease; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-    button:hover { background: #db2777; transform: translateY(-2px); }
-    #response { margin: 20px auto; padding: 15px; border-radius: 5px; max-width: 800px; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-    #response p { margin: 10px 0; line-height: 1.5; font-family: 'Inter', sans-serif; }
-    #canvas { max-width: 600px; margin: 20px auto; }
-    #debug { color: red; font-size: 12px; }
-    .mock-image { max-width: 100%; height: auto; margin-top: 10px; }
-    .progress { margin: 10px 0; }
+    body { margin: 0; font-family: 'Inter', sans-serif; background: #0a0f23; color: #e0e7ff; }
   </style>
 </head>
 <body>
-  <h1 style="text-align: center; color: #ec4899; font-family: 'Playfair Display', serif; font-weight: 700; font-style: italic;">Areola AI</h1>
-  <div class="input-container">
-    <input type="text" id="query" placeholder="Ask Areola (e.g., What is photosynthesis? or generate image)">
-    <button id="askButton" onclick="askTutor()">Generate Lesson</button>
-  </div>
-  <div id="response"></div>
-  <div id="canvas"></div>
-  <div id="debug"></div>
-  <div id="progress" class="progress"></div>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
 
-  <script>
-    let p5Instance = null;
-    let pyodide = null;
+    const App = () => {
+      const [query, setQuery] = useState('');
+      const [response, setResponse] = useState({ text: '', imageUrl: '', audioUrl: '' });
+      const [loading, setLoading] = useState(false);
 
-    async function setup() {
-      let canvas = createCanvas(600, 400);
-      canvas.parent('canvas');
-      background(220);
-      noLoop();
-    }
-
-    function drawPlantCell(turgid = false) {
-      background(220);
-      fill(0, 255, 0);
-      ellipse(300, 200, 200, 200);
-      fill(255, 255, 0);
-      ellipse(300, 200, 180, 180);
-      fill(0, 255, 0, turgid ? 150 : 50);
-      ellipse(350, 150, 80, 80);
-      textAlign(CENTER, CENTER);
-      fill(0);
-      text('Chloroplast', 350, 150);
-      textSize(12);
-    }
-
-    async function loadPyodide() {
-      if (pyodide) return;
-      pyodide = await loadPyodide();
-      await pyodide.loadPackage(['numpy', 'torch']);
-      await pyodide.runPythonAsync(`
-        import torch
-        import numpy as np
-        class SimpleDiffusion:
-          def __init__(self):
-            self.model = torch.nn.Linear(10, 64*64*3)
-            self.step = 0
-            self.max_steps = 10  # Reduced from 50
-          def generate(self, prompt):
-            self.step += 1
-            if self.step > self.max_steps:
-              return np.random.rand(64, 64, 3) * 255
-            noise = np.random.rand(64, 64, 3) * 255
-            return noise
-        model = SimpleDiffusion()
-      `);
-    }
-
-    async function generateImage(prompt) {
-      if (!pyodide) await loadPyodide();
-      const progressDiv = document.getElementById('progress');
-      progressDiv.innerHTML = 'Generating image... 0%';
-      const startTime = Date.now();
-      const result = await pyodide.runPythonAsync(`
-        import js
-        def update_progress(step):
-          if Date.now() - ${startTime} < 5000:  # 5-second timeout
-            js.document.getElementById('progress').innerHTML = f'Generating image... {int(step / model.max_steps * 100)}%'
-          else:
-            raise Exception("Timeout")
-        for step in range(model.max_steps):
-          update_progress(step)
-          image = model.generate("${prompt}")
-        image
-      `).catch(err => {
-        throw new Error(`Pyodide error: ${err.message}`);
-      });
-      progressDiv.innerHTML = 'Generating image... 100%';
-      const array = pyodide.toJs(result);
-      const canvas = document.createElement('canvas');
-      canvas.width = 64;
-      canvas.height = 64;
-      const ctx = canvas.getContext('2d');
-      const imageData = ctx.createImageData(64, 64);
-      imageData.data.set(new Uint8ClampedArray(array.flat()));
-      ctx.putImageData(imageData, 0, 0);
-      progressDiv.innerHTML = '';
-      return canvas.toDataURL();
-    }
-
-    async function askTutor() {
-      const query = document.getElementById('query').value;
-      const responseDiv = document.getElementById('response');
-      const debugDiv = document.getElementById('debug');
-      responseDiv.innerHTML = '';
-      debugDiv.innerHTML = '';
-      if (p5Instance) p5Instance.remove();
-      try {
-        p5Instance = new p5((p) => {
-          p.setup = setup;
-          p.draw = () => {};
-        });
-
-        const response = await fetch('/api/tutor/ask', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query, mode: 'areola' }),
-          timeout: 10000 // 10-second timeout
-        });
-        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-        const data = await response.json();
-        if (data.answer) {
-          const segments = data.answer.split('\n\n').filter(s => s.trim());
-          let index = 0;
-
-          function speakNext() {
-            if (index >= segments.length) {
-              return;
-            }
-            const segment = segments[index].trim();
-            responseDiv.innerHTML += `<p>${segment.replace(/\n/g, '<br>')}</p>`;
-            const utterance = new SpeechSynthesisUtterance(segment);
-            const voices = window.speechSynthesis.getVoices();
-            let femaleVoice = voices.find(v => v.lang === 'en-US' && v.name.includes('Female') && (v.name.includes('Google') || v.name.includes('Zira'))) || voices.find(v => v.lang === 'en-US' && v.gender === 'female') || voices[0];
-            debugDiv.innerHTML += `Using voice: ${femaleVoice.name}<br>`;
-            utterance.voice = femaleVoice;
-            utterance.rate = 0.95;
-            utterance.pitch = 1.15;
-            utterance.onend = () => {
-              index++;
-              if (index < segments.length) {
-                setTimeout(speakNext, 500);
-              } else if (query.toLowerCase().includes('photosynthesis')) {
-                drawPlantCell(false);
-                setTimeout(() => drawPlantCell(true), 2000);
-              }
-            };
-            window.speechSynthesis.speak(utterance);
+      const askTutor = async () => {
+        setLoading(true);
+        try {
+          const res = await fetch('/api/tutor/ask', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query, mode: 'areola' })
+          });
+          if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
+          const data = await res.json();
+          setResponse(data);
+          if (data.audioUrl) {
+            const audio = new Audio(data.audioUrl);
+            audio.play();
           }
-          speakNext();
+        } catch (error) {
+          console.error('Error:', error);
+          setResponse({ text: 'Oops, something went wrong!' });
+        } finally {
+          setLoading(false);
         }
-        if (data.chart) {
-          const ctx = document.createElement('canvas').getContext('2d');
-          new Chart(ctx, data.chart);
-          document.getElementById('canvas').innerHTML = '';
-          document.getElementById('canvas').appendChild(ctx.canvas);
-        }
-        if (query.toLowerCase().includes('generate image')) {
-          if (confirm('Want to generate an image with our custom model? (Prototype)')) {
-            const imageUrl = await generateImage(query);
-            const mockImage = document.createElement('img');
-            mockImage.src = imageUrl;
-            mockImage.className = 'mock-image';
-            responseDiv.appendChild(mockImage);
-            responseDiv.innerHTML += '<p>Custom image generated—refining the model, dawg!</p>';
-          }
-        }
-      } catch (error) {
-        debugDiv.innerHTML += `Error: ${error.message}<br>`;
-        responseDiv.innerText = 'Oops, something went wrong. Check the debug info!';
-      }
-    }
+      };
 
-    window.speechSynthesis.onvoiceschanged = () => {
-      const voices = window.speechSynthesis.getVoices();
-      console.log('Available voices:', voices.map(v => v.name));
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-b from-gray-900 to-black">
+          <h1 className="text-4xl font-bold text-pink-400 mb-6 neon-text">Areola AI</h1>
+          <div className="w-full max-w-md">
+            <div className="flex space-x-2 mb-4">
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Ask Areola (e.g., What is photosynthesis?)"
+                className="flex-1 p-3 rounded-lg bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-500"
+              />
+              <button
+                onClick={askTutor}
+                disabled={loading}
+                className="px-6 py-3 bg-pink-600 text-white rounded-lg hover:bg-pink-700 disabled:bg-pink-400 transition-all duration-300 transform hover:scale-105"
+              >
+                {loading ? 'Generating...' : 'Generate Lesson'}
+              </button>
+            </div>
+            <div className="bg-gray-800 p-4 rounded-lg shadow-lg">
+              {response.text && <p className="mb-4 text-gray-300">{response.text}</p>}
+              {response.imageUrl && <img src={response.imageUrl} alt="Generated" className="mt-2 rounded-lg" />}
+              {response.audioUrl && <audio controls src={response.audioUrl} className="mt-2 w-full" />}
+            </div>
+          </div>
+        </div>
+      );
     };
 
-    const button = document.getElementById('askButton');
-    if (button) {
-      button.addEventListener('mouseover', () => {
-        button.style.transform = 'scale(1.05)';
-      });
-      button.addEventListener('mouseout', () => {
-        button.style.transform = 'scale(1)';
-      });
-    }
-
-    window.addEventListener('load', loadPyodide);
+    ReactDOM.render(<App />, document.getElementById('root'));
   </script>
-</body>
+  <style>
+    .neon-text {
+      text-shadow: 0 0 10px #ec4899, 0 0 20px #ec4899, 0 0 30px #ec4899;
+      animation: neonGlow 1.5s ease-in-out infinite alternate;
+    }
+    @keyframes neonGlow {
+      from { text-shadow: 0 0 5px #ec4899, 0 0 10px #ec4899, 0 0 15px #ec4899; }
+      to { text-shadow: 0 0 10px #ec4899, 0 0 20px #ec4899, 0 0 30px #ec4899; }
+    }
+  </style>
 </html>

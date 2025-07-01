@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const fetch = require('node-fetch');
+const { PythonShell } = require('python-shell');
 
 let lastTopic = null;
 
@@ -11,70 +12,70 @@ function normalizeQuery(query) {
   return query;
 }
 
-function extractKeyTerms(query) {
-  query = query.replace(/\b(who|what|where|when|why|how|is|are|the|a|an|of|in|on|at)\b/gi, '');
-  query = query.replace(/\s+/g, ' ').trim();
-  return query || query.split(' ')[0];
-}
-
-async function getWikipediaSummary(query, context = null) {
+async function getWikipediaSummary(query) {
   try {
-    if (!query && context) query = context;
-
     const searchUrl = `https://en.wikipedia.org/w/api.php?action=opensearch&format=json&search=${encodeURIComponent(query)}&limit=1`;
     const searchResponse = await fetch(searchUrl);
     if (!searchResponse.ok) throw new Error(`Search HTTP error! status: ${searchResponse.status}`);
     const searchData = await searchResponse.json();
-    console.log('Wiki Search response:', JSON.stringify(searchData));
     const [searchTerm, [title]] = searchData;
     if (!title) {
-      return { answer: `Yo, I can’t find '${query}'. Try something like '${lastTopic || 'another topic'}'!`, chart: null };
+      return { text: `Yo, I can’t find '${query}'. Try something like '${lastTopic || 'another topic'}'!`, imagePrompt: null };
     }
 
-    const extractUrl = `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=extracts&titles=${encodeURIComponent(title)}&exintro&explaintext&exsentences=20`; // Increased to 20
+    const extractUrl = `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=extracts&titles=${encodeURIComponent(title)}&exintro&explaintext&exsentences=20`;
     const extractResponse = await fetch(extractUrl);
     if (!extractResponse.ok) throw new Error(`Extract HTTP error! status: ${extractResponse.status}`);
     const extractData = await extractResponse.json();
-    console.log('Wiki Extract response:', JSON.stringify(extractData));
     const page = Object.values(extractData.query.pages)[0];
     if (page && page.extract) {
       lastTopic = query;
-      // Chunk the extract if too long
       const chunks = page.extract.match(/(.|\n){1,500}/g) || [page.extract];
-      let answer = `Here’s the scoop on '${page.title}' from Wikipedia:\n`;
-      answer += chunks.join('\n---\n');
-      let chart = null;
-      if (query.includes('photosynthesis')) {
-        chart = {
-          type: 'bar',
-          data: {
-            labels: ['Light', 'Water', 'CO2'],
-            datasets: [{
-              label: 'Input Usage',
-              data: [70, 20, 10],
-              backgroundColor: 'rgba(236, 72, 153, 0.6)'
-            }]
-          },
-          options: { responsive: true, scales: { y: { beginAtZero: true } } }
-        };
-      }
-      return { answer, chart };
+      const text = `Here’s the scoop on '${page.title}' from Wikipedia:\n${chunks.join('\n---\n')}`;
+      const imagePrompt = `Sci-fi illustration of ${page.title}`;
+      return { text, imagePrompt };
     }
-
-    return { answer: `Yo, I found '${title}' but got no details on '${query}'. Try again or check '${lastTopic || 'something else'}'!`, chart: null };
+    return { text: `Yo, I found '${title}' but got no details on '${query}'. Try again!`, imagePrompt: null };
   } catch (error) {
     console.error('Wikipedia API error:', error.message);
-    return { answer: `Oops, something went wrong with '${query}'. Maybe try again or ask about '${lastTopic || 'something else'}'!`, chart: null };
+    return { text: `Oops, something went wrong with '${query}'!`, imagePrompt: null };
   }
+}
+
+async function generateCustomImage(prompt) {
+  const pyshell = new PythonShell('image_gen.py');
+  return new Promise((resolve, reject) => {
+    pyshell.send(JSON.stringify({ prompt }));
+    pyshell.on('message', (message) => {
+      resolve(`data:image/png;base64,${message}`);
+    });
+    pyshell.end((err) => {
+      if (err) reject(err);
+    });
+  });
+}
+
+async function generateCustomAudio(text) {
+  const pyshell = new PythonShell('tts_gen.py');
+  return new Promise((resolve, reject) => {
+    pyshell.send(JSON.stringify({ text: text.substring(0, 200) }));
+    pyshell.on('message', (message) => {
+      resolve(`data:audio/mpeg;base64,${message}`);
+    });
+    pyshell.end((err) => {
+      if (err) reject(err);
+    });
+  });
 }
 
 router.post('/ask', async (req, res) => {
   const { query, mode } = req.body;
-  let answer = 'Yo, hit me with a question, my man!';
-  let chart = null;
+  let text = 'Yo, hit me with a question, my man!';
+  let imageUrl = null;
+  let audioUrl = null;
 
   if (!query || query.trim() === '') {
-    return res.json({ answer, chart });
+    return res.json({ text, imageUrl, audioUrl });
   }
 
   const normalizedQuery = normalizeQuery(query);
@@ -82,24 +83,39 @@ router.post('/ask', async (req, res) => {
   if (normalizedQuery.startsWith('!wiki')) {
     const wikiQuery = normalizedQuery.slice(5).trim();
     if (wikiQuery) {
-      const result = await getWikipediaSummary(wikiQuery);
-      return res.json(result);
+      const { text: wikiText, imagePrompt } = await getWikipediaSummary(wikiQuery);
+      text = wikiText;
+      if (imagePrompt) {
+        imageUrl = await generateCustomImage(imagePrompt);
+        audioUrl = await generateCustomAudio(text);
+      }
+      return res.json({ text, imageUrl, audioUrl });
     }
-    answer = 'Yo, give me something to search for after \'!wiki\'!';
-    return res.json({ answer, chart });
+    text = 'Yo, give me something to search for after \'!wiki\'!';
+    return res.json({ text, imageUrl, audioUrl });
   }
 
   if (/what('s| is)?\s*(he|she|it|they)\s*(doing|up to)\??/i.test(normalizedQuery)) {
     if (lastTopic) {
-      const result = await getWikipediaSummary(lastTopic, lastTopic);
-      return res.json(result);
+      const { text: wikiText, imagePrompt } = await getWikipediaSummary(lastTopic);
+      text = wikiText;
+      if (imagePrompt) {
+        imageUrl = await generateCustomImage(imagePrompt);
+        audioUrl = await generateCustomAudio(text);
+      }
+      return res.json({ text, imageUrl, audioUrl });
     }
-    answer = 'Yo, I need some context! Ask about someone or something first.';
-    return res.json({ answer, chart });
+    text = 'Yo, I need some context! Ask about someone or something first.';
+    return res.json({ text, imageUrl, audioUrl });
   }
 
-  const result = await getWikipediaSummary(normalizedQuery);
-  res.json(result);
+  const { text: wikiText, imagePrompt } = await getWikipediaSummary(normalizedQuery);
+  text = wikiText;
+  if (imagePrompt) {
+    imageUrl = await generateCustomImage(imagePrompt);
+    audioUrl = await generateCustomAudio(text);
+  }
+  res.json({ text, imageUrl, audioUrl });
 });
 
 module.exports = router;
