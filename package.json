@@ -4,17 +4,13 @@
   "description": "AI Tutor API with Areola integration for university-level courses",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "build": "copy image_gen.py routes/ && copy requirements.txt routes/"
   },
   "dependencies": {
-    "chart.js": "^4.4.0",
-    "cors": "^2.8.5",
-    "express": "^4.18.2",
-    "node-fetch": "^2.6.7",
-    "p5": "^1.4.2",
-    "python": "^0.0.4",
-    "python-shell": "^5.0.0",
-    "shell": "^0.12.0"
+    "express": "^4.19.2",
+    "node-fetch": "^3.3.2",
+    "python-shell": "^5.1.0"
   },
   "author": "cleefroakes",
   "license": "ISC"
