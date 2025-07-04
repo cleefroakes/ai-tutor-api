@@ -2,4 +2,5 @@ diffusers
 torch
 torchvision
 pillow
-moviepy
+moviepy 
+Pillow
