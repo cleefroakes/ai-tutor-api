@@ -8,10 +8,10 @@
     "build": "copy image_gen.py routes/ && copy requirements.txt routes/"
   },
   "dependencies": {
+    "cors": "^2.8.5",
     "express": "^4.19.2",
-    "node-fetch": "^3.3.2",
-    "python-shell": "^5.0.0",
-    "cors": "^2.8.5"
+    "node-fetch": "^2.6.7",
+    "python-shell": "^5.0.0"
   },
   "author": "cleefroakes",
   "license": "ISC"
