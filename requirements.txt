@@ -3,4 +3,5 @@ torch
 torchvision
 pillow
 moviepy 
-Pillow
+Pillow 
+transformers
