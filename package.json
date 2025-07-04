@@ -10,7 +10,7 @@
   "dependencies": {
     "express": "^4.19.2",
     "node-fetch": "^3.3.2",
-    "python-shell": "^5.1.0"
+    "python-shell": "^5.0.0"
   },
   "author": "cleefroakes",
   "license": "ISC"
