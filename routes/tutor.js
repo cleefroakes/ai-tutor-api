@@ -44,7 +44,7 @@ const express = require('express');
   }
 
   async function generateCustomImage(prompt) {
-    const scriptPath = path.join(__dirname, '..', 'image_gen.py'); // Simplified to root relative to routes
+    const scriptPath = path.join(__dirname, '..', 'image_gen.py'); // Ensure lowercase match
     const pyshell = new PythonShell(scriptPath, { pythonPath: 'python' });
     return new Promise((resolve, reject) => {
       pyshell.send(JSON.stringify({ prompt }));
