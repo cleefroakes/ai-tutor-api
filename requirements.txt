@@ -4,4 +4,6 @@ torchvision
 pillow
 moviepy 
 Pillow 
-transformers
+transformers 
+accelerate
+protobuf
