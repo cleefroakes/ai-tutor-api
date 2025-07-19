@@ -1,3 +1,4 @@
+// routes/tutor.js
 const express = require('express');
 const router = express.Router();
 const fetch = require('node-fetch');
@@ -20,8 +21,12 @@ async function getWikipediaSummary(query) {
     if (!searchResponse.ok) throw new Error(`Search HTTP error! status: ${searchResponse.status}`);
     const searchData = await searchResponse.json();
     const [_, [title]] = searchData;
+
     if (!title) {
-      return { text: `Yo, I can’t find '${query}'. Try something like '${lastTopic || 'another topic'}'!`, imagePrompt: null };
+      return {
+        text: `Yo, I can’t find '${query}'. Try something like '${lastTopic || 'another topic'}'!`,
+        imagePrompt: null
+      };
     }
 
     const extractUrl = `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=extracts&titles=${encodeURIComponent(title)}&exintro&explaintext&exsentences=20`;
@@ -50,7 +55,7 @@ async function generateCustomImage(prompt) {
   return new Promise((resolve, reject) => {
     const pyshell = new PythonShell(scriptPath, {
       mode: 'text',
-      pythonPath: 'python',
+      pythonPath: 'python'
     });
 
     pyshell.send(JSON.stringify({ prompt }));
@@ -64,7 +69,7 @@ async function generateCustomImage(prompt) {
       } else if (message.startsWith('image:')) {
         resolve({ image: `data:image/png;base64,${message.slice(6)}` });
       } else {
-        resolve({ image: `data:image/png;base64,${message}` }); // fallback
+        resolve({ image: `data:image/png;base64,${message}` });
       }
     });
 
@@ -76,7 +81,7 @@ async function generateCustomImage(prompt) {
 }
 
 router.post('/ask', async (req, res) => {
-  console.log("Hit /api/tutor/ask endpoint");
+  console.log("🔥 Hit /api/tutor/ask");
   const { query } = req.body;
 
   let text = 'Yo, hit me with a question, my man!';
@@ -100,16 +105,14 @@ router.post('/ask', async (req, res) => {
           imageUrl = result.image || null;
           videoUrl = result.video || null;
         } catch (error) {
-          console.error('Generation error:', error.message);
+          console.error('Image/Video Gen Error:', error.message);
         }
       }
       return res.json({ text, imageUrl, videoUrl });
     }
-    text = 'Yo, give me something to search for after \'!wiki\'!';
-    return res.json({ text, imageUrl, videoUrl });
+    return res.json({ text: 'Yo, give me something to search for after "!wiki"!', imageUrl, videoUrl });
   }
 
-  // Contextual "what's it doing?" follow-up
   if (/what('s| is)?\s*(he|she|it|they)\s*(doing|up to)\??/i.test(normalizedQuery)) {
     if (lastTopic) {
       const { text: wikiText, imagePrompt } = await getWikipediaSummary(lastTopic);
@@ -120,16 +123,14 @@ router.post('/ask', async (req, res) => {
           imageUrl = result.image || null;
           videoUrl = result.video || null;
         } catch (error) {
-          console.error('Generation error:', error.message);
+          console.error('Image/Video Gen Error:', error.message);
         }
       }
       return res.json({ text, imageUrl, videoUrl });
     }
-    text = 'Yo, I need some context! Ask about someone or something first.';
-    return res.json({ text, imageUrl, videoUrl });
+    return res.json({ text: 'Yo, I need some context! Ask about someone or something first.', imageUrl, videoUrl });
   }
 
-  // Default fallback: treat the query as a general topic
   const { text: wikiText, imagePrompt } = await getWikipediaSummary(normalizedQuery);
   text = wikiText;
   if (imagePrompt) {
@@ -138,7 +139,7 @@ router.post('/ask', async (req, res) => {
       imageUrl = result.image || null;
       videoUrl = result.video || null;
     } catch (error) {
-      console.error('Generation error:', error.message);
+      console.error('Image/Video Gen Error:', error.message);
     }
   }
 
