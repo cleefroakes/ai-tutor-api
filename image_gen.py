@@ -25,7 +25,7 @@ try:
         "stabilityai/stable-diffusion-2-1-base",  # Smaller model
         torch_dtype=torch.float32,
         safety_checker=None,
-        use_auth_token=os.environ["HF_TOKEN"],
+        use_auth_token=os.environ["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 "],
         cache_dir=r"C:\Users\User\Downloads\ai-tutor-api\models\cache",  # Cache to avoid re-downloading
         device_map=None
     ).to(device)

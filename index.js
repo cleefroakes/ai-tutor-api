@@ -8,6 +8,7 @@ app.use(cors()); // Enable CORS for all routes
 app.use(express.static('public')); // Serve static files from public folder
 app.use('/api/tutor', tutorRouter);
 
+
 // Basic GET route for root
 app.get('/', (req, res) => {
   res.sendFile(__dirname + '/public/index.html');
